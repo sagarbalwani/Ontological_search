@@ -1,0 +1,371 @@
+<?php
+include('lock.php');
+
+$entity=$_GET['entity'];
+$entity2=$_GET['entity2'];
+$whichgraph=$_GET['graph'];
+//echo $whichgraph;
+//echo $entity;
+//echo $entity2;
+$entity = stripslashes($entity);
+
+$entity = mysql_real_escape_string($entity);
+$entity2 = stripslashes($entity2);
+
+$entity2 = mysql_real_escape_string($entity2);
+
+
+$i=0;
+$source=array();
+$label=array();
+$target=array();
+$color=array();
+list($source,$label,$target,$color)=forward($entity,$i,$whichgraph,$entity2,$source,$target,$label,$color);
+function forward($entity,$i,$whichgraph,$entity2,$source,$target,$label){
+	//	echo "in function entity2 is ".$entity2;
+	$sql="SELECT * FROM $whichgraph WHERE entity1='$entity' or entity1='$entity2' or entity2='$entity' or entity2='$entity2' ";
+	$result=mysql_query($sql);
+	if(!$result){
+		//		echo "here is error";
+		echo mysql_error();
+	}
+	else{
+		//		echo "i am in else";
+		$count=mysql_num_rows($result);
+		//		echo $count;
+		while($row = mysql_fetch_array($result)){
+
+			$source[]=$row['entity1'];
+			if($row[0]==$entity or $row[0]==$entity2){
+				$color[]="red";
+			}
+
+			else if($row[2]==$entity or $row[2]==$entity2){//target has the final entity
+				$color[]="black";
+			}
+			$target[]=$row['entity2'];
+			$label[]=$row['relation'];
+
+		}
+		//		list($source,$label,$target)=back($entity,$i,$whichgraph,$source,$target,$label);
+		$x=array();
+		for($i=0;$i<$count;$i++){
+			if($source[$i]==$entity or $source[$i]==$entity2){
+				$x[]=$target[$i];
+			}
+			else if($target[$i]==$entity or $source[$i]==$entity2){
+				$x[]=$source[$i];
+			}
+			//			echo "x is ".$x[$i]."</br>";
+		}
+		$y=array();
+		$flag=0;
+		$newcount=0;
+		for($i=0;$i<$count;$i++){
+			$flag=0;
+			//			echo $entity2."<br/>";
+			for($j=0;$j<$i;$j++){
+				if($x[$i]==$x[$j]){
+					$flag=1;
+				}
+			}
+			if($x[$i]==$entity or $x[$i]==$entity2){
+				$flag=1;
+			}
+			if($flag==0){
+				$y[]=$x[$i];
+				//				echo "y is ".$y[$newcount]."</br>";
+				$newcount++;
+			}
+		}
+		$j=0;
+		while($j<$newcount){
+			$sql1="SELECT * FROM $whichgraph WHERE entity1='$y[$j]' or entity2='$y[$j]'";
+			$result1=mysql_query($sql1);
+			//			echo "...y is ".$y[$j]."<br/>";
+			//			back($x,$i,$whichgraph);
+			if(!$result1){
+				echo mysql_error();
+			}
+			else{
+
+				while($row1 = mysql_fetch_array($result1)){
+					if($row1[0]==$entity || $row1[2]==$entity || $row1[0]==$entity2 || $row1[2]==$entity2 ){
+						//						if($y[$j]==6)echo "hehe<br/>";
+					}
+					else{
+
+						$source[]=$row1['entity1'];
+
+						if($row1[0]==$y[$j]){
+							$color[]="red";
+						}
+						else if($row1[2]==$y[$j]){
+							$color[]="black";
+						}
+						$target[]=$row1['entity2'];
+						$label[]=$row1['relation'];
+					}
+				}
+				$j=$j+1;
+			}
+			//		echo "i am in while"."<br/>";
+		}
+	}
+	return array($source,$label,$target,$color);
+}
+/*
+   echo "<br/>";
+   $i=0;
+   while($i<11){
+
+   echo $source[$i]."  ";
+
+   echo $label[$i]."  ";
+
+   echo $target[$i]."  ";
+//	echo $color[$i]."  ";
+
+echo "<br/>";
+$i++;
+}
+ */	
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Graph</title>
+<script type="text/javascript" src="d3.v2.js"></script>
+</head>
+<body>
+<style>
+.draggable {
+cursor: move;
+}
+svg {
+border: solid 10px #ccc;
+}
+</style>
+<svg id="cloud" width="1500" height="800">
+<defs>
+<marker id="arrow" viewbox="0 -5 10 10" refX="18" refY="0"
+markerWidth="6" markerHeight="6" orient="auto">
+<path d="M0,-5L10,0L0,5Z">
+</marker>
+</defs>
+</svg>
+<script type="text/javascript" charset="utf-8">
+
+var w = 1500, h = 1000;
+
+var labelDistance = 0;
+
+var vis = d3.select("#cloud");//.append("svg:svg").attr("width", w).attr("height", h);
+
+var nodes = [];
+var labelAnchors = [];
+var labelAnchorLinks = [];
+var links = [];
+
+
+
+var labelarray = new Array();
+var targetarray = new Array();
+var sourcearray = new Array();
+var whichgraph;
+var countlinks=0;
+var rootentity1,rootentity2;
+
+<?php 
+echo "rootentity1='".$entity."';";
+echo "rootentity2='".$entity2."';";
+
+echo " countlinks =".count($label).";";
+echo "whichgraph='".$whichgraph."';";
+for ($i=0; $i < count($label); $i++) { 
+	echo "labelarray[$i] = '" . $label[$i] . "';"; //outputting javascript!
+	echo "sourcearray[$i] = '" . $source[$i] . "';"; //outputting javascript!
+	echo "targetarray[$i] = '" . $target[$i] . "';"; //outputting javascript!
+} 
+?>
+//			alert (countlinks*2);
+//			alert (sourcearray);
+
+var temparray=sourcearray.concat(targetarray);
+//			alert (sourcearray[1]);
+var matched=0;
+for(var i=0;i<countlinks*2;i++){
+	matched=0;
+	for(var j=0;j<i;j++){
+		if(temparray[i]==temparray[j]){
+			matched=1;
+			break;
+		}				
+	}
+	if(matched==0){
+		var node = {			
+label : temparray[i]
+		}
+		nodes.push(node);
+		labelAnchors.push({
+node : node
+});
+labelAnchors.push({
+node : node
+});
+
+}					
+};
+//			alert("node"+nodes[1].label);
+for(var i=0;i<countlinks;i++){
+	for(var j=0;j<nodes.length;j++){
+		//					alert("matching");
+		var sourceint,targetint,labelcolor;
+		if(nodes[j].label==sourcearray[i]){sourceint=j;}
+		if(nodes[j].label==targetarray[i]){targetint=j;}
+	}
+	links.push({
+source : sourceint,
+target : targetint,
+name : labelarray[i],
+weight : 1,
+color : "red"
+});
+
+}
+
+for(var i = 0; i < nodes.length; i++) {
+	labelAnchorLinks.push({
+source : i * 2,
+target : i * 2 + 1,
+weight : 1
+});
+};
+
+var force = d3.layout.force().size([w, h]).nodes(nodes).links(links).gravity(0.3).linkDistance(150).charge(-5000).linkStrength(function(x) {
+		return x.weight * 10
+		});
+
+
+force.start();
+var force2 = d3.layout.force().nodes(labelAnchors).links(labelAnchorLinks).gravity(0).linkDistance(30).linkStrength(8).charge(-100).size([w, h]);
+force2.start();
+
+
+
+function ihaveselected(evt){
+
+	var tt=evt.target;
+	window.location="trial2.php"+'?entity='+tt.textContent+'&graph='+whichgraph;
+	//					tt.textContent="make changes here";				
+	//				alert("i am working"+tt.textContent);//very very important hardwork.... pays.. :)
+}
+
+
+var i=0;
+var setdata = function(){
+	this.text(function(d){return d.name})
+}
+var setcolor=function(){
+	this.style("stroke",function(d){return d.color}).style("stroke-width","2");
+}
+var link = vis.selectAll("line.link").data(links).enter().append("line").attr("class", "link").attr("marker-end", "url(#arrow)");
+var trytext=vis.selectAll("text").data(links).enter().append("text").attr("onclick","ihaveselected()");
+trytext.call(setdata);
+link.call(setcolor);
+//			var linkingtext=trytext.attr("x",200).attr("y",200).text("abhishek");
+//			var templink = d3.select("line.link").attr("x",200).attr("y",200);
+//			alert("templink " + templink.attr("x")+","+templink.attr("y"));
+var nodecolor=function(){
+	this.style("fill",function(d){if(d.label==rootentity1 || d.label==rootentity2) return "blue"; else return "#555";}).style("stroke", "#FFF").style("stroke-width", 3);
+}			
+var node = vis.selectAll("g.node").data(force.nodes()).enter().append("svg:g").attr("class", "node");
+node.append("svg:circle").attr("r", 8).attr("class","draggable");//.style("fill", "#555").style("stroke", "#FFF").style("stroke-width", 3);
+node.call(force.drag);
+node.call(nodecolor)
+
+
+	var anchorLink = vis.selectAll("line.anchorLink").data(labelAnchorLinks).enter().append("svg:line").attr("class", "anchorLink").style("stroke", "black");		
+
+
+	var anchorNode = vis.selectAll("g.anchorNode").data(force2.nodes()).enter().append("g").attr("class", "anchorNode");
+	anchorNode.append("circle").attr("r", 1).style("fill", "red");
+	anchorNode.append("text")
+	.attr("onclick","ihaveselected(evt)")
+	.text(function(d, i) {
+			return i % 2 == 0 ? "" : d.node.label
+			})
+.style("font-family", "Arial").style("font-size", 15).style("fill",function(d){if(d.node.label==rootentity1 || d.node.label==rootentity2) return "blue"; else return "red";})
+.append("set").attr("attributeName","font-size").attr("from","15").attr("to","25")
+.attr("begin","mouseover").attr("end","mouseout");
+
+var updateposition = function(){
+	this.attr("x",function(d){
+			return (2*d.source.x+d.target.x)/3;
+			}).attr("y",function(d){
+				return (2*d.source.y+d.target.y)/3;
+				});
+}
+var updateLink = function() 
+{
+	this.attr("x1", function(d) {
+			return d.source.x;
+			}).attr("y1", function(d) {
+				return d.source.y;
+				}).attr("x2", function(d) {
+					return d.target.x;
+					}).attr("y2", function(d) {
+						return d.target.y;
+						});
+
+}
+
+var updateNode = function() {
+	this.attr("transform", function(d) {
+			return "translate(" + d.x + "," + d.y + ")";
+			});
+
+}
+//			var updateposition=function updateposition(){
+//				this.attr("x",Math.random()*1000).attr("y",Math.random()*1000);
+//			}
+
+
+force.on("tick", function() {
+
+		force2.start();
+		node.call(updateNode);
+
+		anchorNode.each(function(d, i) {
+			if(i % 2 == 0) {
+			d.x = d.node.x;
+			d.y = d.node.y;
+			} else {
+			var b = this.childNodes[1].getBBox();
+
+			var diffX = d.x - d.node.x;
+			var diffY = d.y - d.node.y;
+
+			var dist = Math.sqrt(diffX * diffX + diffY * diffY);
+
+			var shiftX = b.width * (diffX - dist) / (dist * 2);
+			shiftX = Math.max(-b.width, Math.min(0, shiftX));
+			var shiftY = 5;
+			this.childNodes[1].setAttribute("transform", "translate(" + shiftX + "," + shiftY + ")");
+			}
+			});
+
+
+		anchorNode.call(updateNode);
+
+		link.call(updateLink);
+		anchorLink.call(updateLink);
+
+		trytext.call(updateposition);
+
+});
+
+</script>
+</body>
+</html>

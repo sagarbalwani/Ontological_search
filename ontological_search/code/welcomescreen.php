@@ -1,0 +1,276 @@
+<?php
+include('lock.php');
+$whichgraph=welcome;//$_POST['graph'];//$_SESSION['whichgraph'];//tells which graph has to be updated.....
+
+$sql="select * from $whichgraph ";
+
+$source=array();
+$label=array();
+$target=array();
+
+$result=mysql_query($sql);
+if(!$result){
+	echo "cannot delete because of some error";
+	echo 'MySQL Error: ' . mysql_error();
+}
+else{
+	while ($row = mysql_fetch_row($result)) {
+		$source[]=$row[0];
+		$label[]=$row[1];
+		$target[]=$row[2];		
+	}
+}
+$count=count($label);
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>hehe</title>
+<script type="text/javascript" src="d3.v2.js"></script>
+</head>
+<body>
+<style>
+.draggable {
+cursor: move;
+}
+svg {
+border: solid 10px #ccc;
+}
+</style>
+<svg id="cloud" width="700" height="450">
+<defs>
+<marker id="arrow" viewbox="0 -5 10 10" refX="18" refY="0"
+markerWidth="6" markerHeight="6" orient="auto">
+<path d="M0,-5L10,0L0,5Z">
+</marker>
+</defs>
+</svg>
+<!--li class="newclass"><p>lakjd</p></li-->
+<script type="text/javascript" charset="utf-8">
+
+var w = 700, h = 500;
+
+var labelDistance = 0;
+
+var vis = d3.select("#cloud");//.append("svg:svg").attr("width", w).attr("height", h);
+//				d3.select("svg").append("defs").append("marker").attr("id","myMarker").attr("viewBox","0 0 10 10").attr("refX","1").attr("refY","5").attr("markerUnits","strokeWidth").attr("orient","auto").attr("markerWidth","4").attr("markerHeight","3").append("polyline").attr("points","0,0 10,5 0,10 1,5").style("fill","darkblue");
+
+var nodes = [];
+var labelAnchors = [];
+var labelAnchorLinks = [];
+var links = [];
+
+
+
+var labelarray = new Array();
+var targetarray = new Array();
+var sourcearray = new Array();
+var whichgraph;
+var countlinks=0;
+
+<?php 
+echo " countlinks =".count($label).";";
+echo "whichgraph='".$whichgraph."';";
+for ($i=0; $i < count($label); $i++) { 
+	echo "labelarray[$i] = '" . $label[$i] . "';"; //outputting javascript!
+	echo "sourcearray[$i] = '" . $source[$i] . "';"; //outputting javascript!
+	echo "targetarray[$i] = '" . $target[$i] . "';"; //outputting javascript!
+} 
+?>
+//			alert (countlinks*2);
+//			alert (sourcearray);
+
+var temparray=sourcearray.concat(targetarray);
+//			alert (sourcearray[1]);
+var matched=0;
+for(var i=0;i<countlinks*2;i++){
+	matched=0;
+	for(var j=0;j<i;j++){
+		if(temparray[i]==temparray[j]){
+			matched=1;
+			break;
+		}				
+	}
+	if(matched==0){
+		var node = {			
+label : temparray[i]
+		}
+		nodes.push(node);
+		labelAnchors.push({
+node : node
+});
+labelAnchors.push({
+node : node
+});
+
+}					
+};
+//			alert("node"+nodes[1].label);
+for(var i=0;i<countlinks;i++){
+	for(var j=0;j<nodes.length;j++){
+		//					alert("matching");
+		var sourceint,targetint;
+		if(nodes[j].label==sourcearray[i]){sourceint=j;}
+		if(nodes[j].label==targetarray[i]){targetint=j;}
+	}
+	links.push({
+source : sourceint,
+target : targetint,
+name : labelarray[i],
+weight : 1,
+color : "red"
+});
+
+}
+
+for(var i = 0; i < nodes.length; i++) {
+	labelAnchorLinks.push({
+source : i * 2,
+target : i * 2 + 1,
+weight : 1
+});
+};
+
+
+var force = d3.layout.force().size([w, h]).nodes(nodes).links(links).gravity(0.3).linkDistance(150).charge(-5000).linkStrength(function(x) {
+		return x.weight * 10
+		});
+
+
+force.start();
+var force2 = d3.layout.force().nodes(labelAnchors).links(labelAnchorLinks).gravity(0).linkDistance(30).linkStrength(8).charge(-100).size([w, h]);
+force2.start();
+
+
+
+function ihaveselected(evt){
+
+	var tt=evt.target;
+	if(tt.textContent=="home"){
+	window.location="welcome.php";		
+	}
+	else if(tt.textContent=="modify_dictionary"){
+	window.location="modify.php";		
+	}
+	else if(tt.textContent=="create_graph"){
+	window.location="graph.php";		
+	}
+	if(tt.textContent=="search"){
+	window.location="search.php";		
+	}
+	else if(tt.textContent=="log_out"){
+	window.location="logout.php";
+	}
+	//else{
+	//window.location="www.google.com";}//"trial2.php"+'?entity='+tt.textContent+'&graph='+whichgraph;
+	//					tt.textContent="make changes here";				
+	//				alert("i am working"+tt.textContent);//very very important hardwork.... pays.. :)
+}
+
+
+var i=0;
+var setdata = function(){
+	this.text(function(d){return d.name})
+}
+var setcolor=function(){
+	this.style("stroke",function(d){return d.color}).style("stroke-width","2");
+}
+var link = vis.selectAll("line.link").data(links).enter().append("line").attr("class", "link").attr("marker-end", "url(#arrow)");
+var trytext=vis.selectAll("text").data(links).enter().append("text").attr("onclick","ihaveselected()");
+trytext.call(setdata);
+link.call(setcolor);
+
+
+var node = vis.selectAll("g.node").data(force.nodes()).enter().append("svg:g").attr("class", "node");
+node.append("svg:circle").attr("r", 10).attr("class","draggable").style("fill", "#555").style("stroke", "#FFF").style("stroke-width", 3);
+node.call(force.drag);
+
+
+var anchorLink = vis.selectAll("line.anchorLink").data(labelAnchorLinks).enter().append("svg:line").attr("class", "anchorLink").style("stroke", "black");		
+
+
+var anchorNode = vis.selectAll("g.anchorNode").data(force2.nodes()).enter().append("g").attr("class", "anchorNode");
+anchorNode.append("circle").attr("r", 1).style("fill", "red");
+anchorNode.append("text")
+.attr("onclick","ihaveselected(evt)")
+.text(function(d, i) {
+		return i % 2 == 0 ? "" : d.node.label
+		})
+.style("fill", "red").style("font-family", "Arial").style("font-size", 12)
+.append("set").attr("attributeName","font-size").attr("from","12").attr("to","25")
+.attr("begin","mouseover").attr("end","mouseout");
+//				.append("set").attr("attributeName","fill").attr("from","red").attr("to","black")
+//				.attr("begin","mouseover").attr("end","mouseout");
+
+
+var updateposition = function(){
+	this.attr("x",function(d){
+			return (2*d.source.x+d.target.x)/3;
+			}).attr("y",function(d){
+				return (2*d.source.y+d.target.y)/3;
+				});
+}
+var updateLink = function() 
+{
+	this.attr("x1", function(d) {
+			return d.source.x;
+			}).attr("y1", function(d) {
+				return d.source.y;
+				}).attr("x2", function(d) {
+					return d.target.x;
+					}).attr("y2", function(d) {
+						return d.target.y;
+						});
+
+}
+
+var updateNode = function() {
+	this.attr("transform", function(d) {
+			return "translate(" + d.x + "," + d.y + ")";
+			});
+
+}
+//			var updateposition=function updateposition(){
+//				this.attr("x",Math.random()*1000).attr("y",Math.random()*1000);
+//			}
+
+
+force.on("tick", function() {
+
+		force2.start();
+		node.call(updateNode);
+
+		anchorNode.each(function(d, i) {
+			if(i % 2 == 0) {
+			d.x = d.node.x;
+			d.y = d.node.y;
+			} else {
+			var b = this.childNodes[1].getBBox();
+
+			var diffX = d.x - d.node.x;
+			var diffY = d.y - d.node.y;
+
+			var dist = Math.sqrt(diffX * diffX + diffY * diffY);
+
+			var shiftX = b.width * (diffX - dist) / (dist * 2);
+			shiftX = Math.max(-b.width, Math.min(0, shiftX));
+			var shiftY = 5;
+			this.childNodes[1].setAttribute("transform", "translate(" + shiftX + "," + shiftY + ")");
+			}
+			});
+
+
+		anchorNode.call(updateNode);
+
+		link.call(updateLink);
+		anchorLink.call(updateLink);
+
+		trytext.call(updateposition);
+
+});
+
+</script>
+</body>
+</html>
+

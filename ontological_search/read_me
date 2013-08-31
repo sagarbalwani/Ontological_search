@@ -1,0 +1,12 @@
+*Some of screen shots of the project are attached
+*folder code contains all the codes as following
+	-style.css style sheet
+	-trial.php and trial2.php contain javascipts to display graph
+	-d3.v2.js javascript and d3 library codes
+	-r2.sql	SQL DUMP of the sql database created
+	-other php files containing php codes and html codes
+*sample data base is created try searching computer or programming or computer_science
+
+
+Note Server needs to be set up and a sql database needs to be set up for the project to be hosted.
+

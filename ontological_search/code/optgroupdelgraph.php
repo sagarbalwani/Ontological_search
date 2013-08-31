@@ -1,0 +1,51 @@
+<?php
+include('lock.php');
+
+$whichgraph=$_SESSION['whichgraph'];//tells which graph has to be updated.....
+
+$deletetype=$_POST['deletetype'];//tells whether node or edge to delete.....
+
+$whatdelete=$_POST['whatdelete'];//what relation or node to be deleted??
+
+$entity1=$_POST['entity1'];
+$entity2=$_POST['entity2'];
+
+echo "to delete from graph";
+
+if($deletetype=='node'){
+	$sql = "delete from $whichgraph where entity1='$whatdelete' or entity2='$whatdelete' ";
+	$result = mysql_query($sql);
+	if(!$result){
+		echo "cannot delete because of some error";
+		echo 'MySQL Error: ' . mysql_error();
+	}
+	else{
+		echo "node deleted";
+	}
+	if(mysql_affected_rows()==0){
+		echo "node does not exist";
+	}
+}
+	else{
+		echo "relation deleted ";
+	}
+else if($deletetype=='edge'){
+	$sql="delete from $whichgraph where relation='$whatdelete' and entity1='$entity1' and entity2='$entity2' ";
+	$result=mysql_query($sql);
+	if(!$result){
+		echo "cannot delete because of some error";
+		echo 'MySQL Error: ' . mysql_error();
+	}
+	else{
+		echo "relation deleted";
+	}
+	if(mysql_affected_rows()==0){
+		echo "relation does not exist";
+	}
+	else{
+		echo "relation deleted ";
+	}
+
+}
+//header("Location: .php");
+?>

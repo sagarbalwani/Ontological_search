@@ -1,0 +1,36 @@
+<html>
+<body>
+<h2> User Guide </h2>
+<h3>
+The System provides the following functionalities to the user :-</br>
+</h3>
+<h4>
+1. The user can insert the elements into the dictionary and can assign category to the elements.
+</br>
+2. The user can also delete and update the names of the elements in the dictionary.
+</br>
+3. While updating the element the user must be careful in choosing the new name which should not be in the dictionary else update in dictionary will not take place.
+</br>
+4. While deleting the element the user must be careful in choosing the element in the dictionary else delete will not take place, also the element being deleted should not be present in any of the existing graphs or delete will not take place.
+</br>
+5. The user can create a new graph, load an existing graph for modification or delete a graph.
+</br>
+6. After loading or making a new graph the user can add a new edge in the graph or modify an existing edge.
+</br>
+7. While adding a new edge in the graph the user should choose entity1 and entity2 from either class,substance,abstract_entity,quality,action and relation from relationship dictionary else insert will not take place.
+</br>
+8. When deleting from the graph the user can either delete a complete edge from the graph and also delete a node from the graph.
+</br>
+9. When updating the graph the user can rename the node of the graph but the new name should be present in the dictionary.
+</br>
+10. When updating the graph the user can also rename the relationship name of the edge.
+</br>
+11. In search the user can view the entire graph, or view a particular element or veiw the elements according to a single and/or fuctionality.
+</br>
+12. When viewing a particular element the information upto 2 level of depth is displayed to the user.
+</br>
+13. The text in the graphical display is clickable and on click the information upto 2 level of depth is displayed.
+
+</h4>
+</body>
+</html>
